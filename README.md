@@ -1,4 +1,4 @@
-# DFRobot_ENS160
+# DFRobot_CH432T
 - [中文版](./README_CN.md)
 
 This CH432t Raspberry Pi SPI to modbus expansion board is designed to convert Pi's SPI to two modbus serial ports.
