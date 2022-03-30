@@ -14,12 +14,12 @@
 from __future__ import print_function
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
+import time
 import modbus_tk
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
-import time
 
 from DFRobot_CH432T import *   # Import DFRobot_CH432T replace importing serial library
 
@@ -34,9 +34,9 @@ relay_baudrate = 115200   # Baud rate of the relay
   #  PORT="/dev/ttyAMA0"#serial number
   #  ser = serial.Serial(port=PORT, baudrate=115200, bytesize=8, parity='N', stopbits=1)
   #  to the following, other modbus_tk operations will be almost the same
-  # @note  Serial number (actually use Raspberry Pi 'spidev0.0'), "CH432T_PORT_0" or "CH432T_PORT_1" can be used
+  # @note  Serial number (actually use Raspberry Pi 'spidev0.0'), "CH432T_PORT_1" or "CH432T_PORT_2" can be used
 '''
-PORT="CH432T_PORT_0"
+PORT="CH432T_PORT_1"
 ser = DFRobot_CH432T(port=PORT, baudrate=115200, bytesize=8, parity='N', stopbits=1)
 
 def mod():

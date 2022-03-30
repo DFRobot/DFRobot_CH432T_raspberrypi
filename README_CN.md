@@ -66,12 +66,6 @@ python3: pip3 install modbus_tk
   '''
   def write(self, data):
 
-  '''!
-    @brief 测试发送
-    @param val 发送的值
-  '''
-  def test_send(self, val=0x55):
-
 ```
 
 
@@ -96,6 +90,7 @@ python3: pip3 install modbus_tk
 ## 历史
 
 - 2021/12/30 - 1.0.0 版本
+- 2022/3/30 - 1.0.1 版本
 
 
 ## 创作者
