@@ -1,8 +1,8 @@
 # -*- coding: utf_8 -*-
 '''!
   @file  ch432t_demo.py
-  @brief  这是一个测试demo: 把树莓派扩展板的一个modbus接口作为主机, 另一个作为从机
-  @n  将它们相互连接起来, 运行这个demo就可以进行应该简单的收发测试
+  @brief  This is a test demo: use a Modbus interface of Raspberry Pi expansion board as the master, and the other as the slave
+  @n  Connect them and run this demo to perform a simple transceiver test
   @copyright  Copyright (c) 2010 DFRobot Co.Ltd (http://www.dfrobot.com)
   @license  The MIT License (MIT)
   @author  [qsjhyy](yihuan.huang@dfrobot.com)
@@ -42,25 +42,25 @@ def main():
 
   slave_addr = 0x66   # Address of the slave
   slave_baudrate = 115200   # Baud rate of the slave
-  reg_length = 0   # 从机寄存器数据长度
-  test_count = 0   # 测试次数
+  reg_length = 0   # Data length of the slave register 
+  test_count = 0   # Test count
 
-  """ 初始化从机 """
+  """ Initialize the slave """
   print("Initializing the slave port...")
   print("slave_ser.name = %s\r\n" % slave_ser.name)
   server = modbus_rtu.RtuServer(slave_ser)
   server.start()
   slave = server.add_slave(slave_addr)
-  slave.add_block('test', cst.HOLDING_REGISTERS, 0, 10)   # 设置从机寄存器
+  slave.add_block('test', cst.HOLDING_REGISTERS, 0, 10)   # Set the slave register
 
   values = [7, 1, 5]
   reg_length = len(values)
-  slave.set_values('test', 0, values)   # 设置从机寄存器值
+  slave.set_values('test', 0, values)   # Set values of the slave register
   test_values = slave.get_values('test', 0, reg_length)
   if values != list(test_values):
     print("Failed to set the slave register value!!!\r\n")
 
-  """ 初始化主机 """
+  """ Initialize the master """
   print("Initializing the master port...")
   print("master_ser.name = %s\r\n" % master_ser.name)
   master = modbus_rtu.RtuMaster(master_ser)
@@ -70,19 +70,19 @@ def main():
 
   while True:
     test_count +=  1
-    values = [9, 9, test_count, 9, 9]   # 注意保持寄存器是16bits, 所以最大可存储的test_count为65535
-    slave.set_values('test', 0, values)   # 从机自己更改寄存器值
+    values = [9, 9, test_count, 9, 9]   # Note that the holding register is 16 bits, so the maximum storable test_count is 65535
+    slave.set_values('test', 0, values)   # The slave will modify its register values
     reg_length = len(values)
     print('Slave test value: %d' % test_count)
 
-    master_ser.baudrate = slave_baudrate   # Change communication baud rate to the temperature sensor baud rate 9600
+    master_ser.baudrate = slave_baudrate   # Change communication baud rate to the slave baud rate 115200
 
     # """
     #   # Read the data of input register 0x00 of the slave whose rs485 address is 0x66
     #   # |       66       |        06      |       00 01      |      00 01       |    60 39   |
     #   # | Device address | operation code | register address | read data length | check code |
     # """
-    data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # 主机读取从机寄存器值
+    data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # The master reads the values of the slave register
     print('Master reads data packets: %s\r\n' % (str(data)))
 
     time.sleep(1)

@@ -627,21 +627,13 @@ class DFRobot_CH432T(SerialBase, object):
     '''
     if port not in ["CH432T_PORT_1", "CH432T_PORT_2"]:
         raise SerialException("Invalid PORT, please select 'CH432T_PORT_1' or 'CH432T_PORT_2'")
-    # if self.is_open:
-    #     raise SerialException("Port is already open.")
+
     self.portnum = int(port[-1]) - 1
     logger.info("self.portnum = %d", self.portnum)
 
-    # Use GPIO port to monitor ch432t interrupt
-    # self._flag = 0   # interrupt mark bit
-    # self._int_pin = 5   # interrupt trigger pin BCM code is default to be 5
+    self._cs = 8   # default to use spidev0.0
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
-    # GPIO.setup(self._int_pin, GPIO.IN)
-    # GPIO.remove_event_detect(self._int_pin)
-    # GPIO.add_event_detect(self._int_pin, GPIO.FALLING, callback=self.ch432t_int_callback)
-
-    self._cs = 8   # default to use spidev0.0
     GPIO.setup(self._cs, GPIO.OUT, initial=1)
 
     self._spi = spidev.SpiDev()
@@ -656,7 +648,6 @@ class DFRobot_CH432T(SerialBase, object):
       @brief Close the serial port and the internal reference clock of it, so as to make the serial port enter low-power status
     '''
     self.set_low_power_mode(CH432T_LOW_POWER_MODE)   # close the internal reference clock of the serial port
-    # self.set_sleep_mode(CH432T_SLEEP_MODE)   # close the clock oscillator to make serial port 0 and 1 enter sleep mode
     self.is_open = False
 
   def open(self):
@@ -666,14 +657,14 @@ class DFRobot_CH432T(SerialBase, object):
     '''
     # Read the value of CH432T_IIR_REG and CH432T_LSR_REG register of port0 and port1
     iir = self._read_reg(CH432T_IIR_REG, 1)[0]
-    # logger.info( "CH432T_IIR_REG = %#x", iir)
+    logger.info( "CH432T_IIR_REG = %#x", iir)
     lsr = self._read_reg(CH432T_LSR_REG, 1)[0]
-    # logger.info( "CH432T_LSR_REG = %#x", lsr)
+    logger.info( "CH432T_LSR_REG = %#x", lsr)
 
     # Test user register of port0 and port1
     self._write_reg(CH432T_SCR_REG, 0x66)
     spr = self._read_reg(CH432T_SCR_REG, 1)[0]
-    # logger.info( "CH432T_SCR_REG = %#x", spr)
+    logger.info( "CH432T_SCR_REG = %#x", spr)
     if 0x66 != spr:
       raise SerialException("Failed to open port! Check whether the expansion board \
                               is properly connected and whether spidev0.0 is occupied.")
@@ -781,7 +772,7 @@ class DFRobot_CH432T(SerialBase, object):
 
     # Save raw value of LCR register
     lcr = self._read_reg(CH432T_LCR_REG, 1)[0]
-    # logger.info("lcr = %#x", lcr)
+    logger.info("lcr = %#x", lcr)
     # Open the LCR divisors for configuration
     self._write_reg(CH432T_LCR_REG, CH432T_LCR_CONF_MODE_A)
     time.sleep(0.002)
@@ -859,30 +850,12 @@ class DFRobot_CH432T(SerialBase, object):
     '''
     modem_status.set_list(self._read_reg(CH432T_MSR_REG, 1))
 
-  def test_send(self, val=0x55):
-    '''!
-      @brief Send test
-      @param val The sent value
-    '''
-    self._write_reg(CH432T_THR_REG, val)
-
-  def test_recv(self):
-    '''!
-      @brief Send test
-      @param val The sent value
-    '''
-    data = 0
-    while 193 != data:
-      data = self._read_reg(CH432T_RBR_REG, 1)[0]
-      logger.info(data)
-
   def read(self, size):
     '''!
       @brief Read serial data
       @param size Read length of serial data
       @return The read serial data
     '''
-    # logger.info("read size = %d", size)
     return self.ch432t_port_irq(size)
 
   def write(self, data):
@@ -898,14 +871,6 @@ class DFRobot_CH432T(SerialBase, object):
       d = map(ord, list(data))
     self._write_reg(CH432T_THR_REG, d)
 
-  # def ch432t_int_callback(self, channel):
-  #   '''!
-  #     @brief Interrupt callback function
-  #     @param channel Interrupt trigger channel
-  #   '''
-  #   # logger.info("ch432t_int_callback")
-  #   self._flag = 1
-
   def ch432t_port_irq(self, size):
     '''!
       @brief Interrupt port handler function
@@ -916,47 +881,44 @@ class DFRobot_CH432T(SerialBase, object):
     int_status = self.INT_status_reg()
     lines_status = self.lines_status_reg()
     while 1:
-      # if 1 == self._flag:
-      # time.sleep(0.01)
-      if 1:
-        int_status.set_list([0])
-        self.get_INT_status(int_status)
-        # logger.info("int_status----%#x", int_status.get_list()[0])
+      int_status.set_list([0])
+      self.get_INT_status(int_status)
 
-        if CH432T_IIR_NO_INT_BIT == int_status.int_type:
+      if CH432T_IIR_NO_INT_BIT == int_status.int_type:
+        pass
+      elif CH432T_IIR_RLSE_SRC == int_status.int_type:
+        # Interrupt for receiving line status, priority: 1
+        # Line status register, used to analyze serial port status by query
+        lines_status.set_list([0])
+        self.get_lines_status(lines_status)
+        logger.info("Unknown LSR interrupt state")
+        if lines_status.r_fifo_err:
+          # logger.info("lines_status.r_fifo_err")
+          # logger.info("lines_status.r_fifo_err(CH432T_RBR_REG)---%#x", self._read_reg(CH432T_RBR_REG, 1)[0])
           pass
-        elif CH432T_IIR_RLSE_SRC == int_status.int_type:
-          # Interrupt for receiving line status, priority: 1
-          # Line status register, used to analyze serial port status by query
-          lines_status.set_list([0])
-          self.get_lines_status(lines_status)
-          logger.info("Unknown LSR interrupt state")
-          if lines_status.r_fifo_err:
-            # logger.info("lines_status.r_fifo_err")
-            # logger.info("lines_status.r_fifo_err(CH432T_RBR_REG)---%#x", self._read_reg(CH432T_RBR_REG, 1)[0])
-            pass
-          elif lines_status.fifo_over:
-            # logger.info("lines_status.fifo_over")
-            pass
-          else:
-            # logger.info("Unknown LSR interrupt state")
-            pass
-        elif int_status.int_type in [CH432T_IIR_RDI_SRC, CH432T_IIR_RTOI_SRC]:
-          # Interrupt for receiving data, priority: 2; interrupt for receiving data timeout priority: 2
-          # logger.info("CH432T_IIR_RTOI_SRC")
-          return self.ch432t_handle_rx(size)
-        # elif CH432T_IIR_THRI_SRC == int_status.int_type:
-        #   # THR register empty interrupt, priority: 3
-        #   self._write_reg(CH432T_THR_REG, 0x66)
-        #   # break
-        elif CH432T_IIR_MSI_SRC == int_status.int_type:
-          # MODEM output change interrupt, priority: 4
-          # self.get_modem_status(CH432T_MSR_REG)
-          # logger.info("msr---%#x", self._read_reg(CH432T_MSR_REG, 1)[0])
+        elif lines_status.fifo_over:
+          # logger.info("lines_status.fifo_over")
           pass
         else:
-          # logger.info("Unknown interrupt state")
+          # logger.info("Unknown LSR interrupt state")
           pass
+      elif int_status.int_type in [CH432T_IIR_RDI_SRC, CH432T_IIR_RTOI_SRC]:
+        # Interrupt for receiving data, priority: 2; interrupt for receiving data timeout priority: 2
+        # logger.info("CH432T_IIR_RTOI_SRC")
+        return self.ch432t_handle_rx(size)
+      # elif CH432T_IIR_THRI_SRC == int_status.int_type:
+      #   # THR register empty interrupt, priority: 3
+      #   self._write_reg(CH432T_THR_REG, 0x66)
+      #   # break
+      elif CH432T_IIR_MSI_SRC == int_status.int_type:
+        # MODEM output change interrupt, priority: 4
+        self.get_modem_status(CH432T_MSR_REG)
+        logger.info("msr---%#x", self._read_reg(CH432T_MSR_REG, 1)[0])
+        # pass
+      else:
+        # logger.info("Unknown interrupt state")
+        pass
+
       if timeout.expired():
         return None
 
@@ -979,9 +941,7 @@ class DFRobot_CH432T(SerialBase, object):
       if lines_status.data_ready:
         buf.append(self._read_reg(CH432T_RBR_REG, 1)[0])
       else:
-        # time.sleep(0.1)
         if size <= len(buf):
-          # self._flag = 0
           logger.info(buf)
           return bytes(bytearray(buf))
       if timeout.expired():
@@ -1009,15 +969,11 @@ class DFRobot_CH432T(SerialBase, object):
     with ch432t_spi_lock:
       if isinstance(data, int):
         data = [data]
-      logger.info(data)
-      # logger.info("data = %#x " % data[0])
       reg_addr = [0x02 | ( (reg + self.portnum * 0x08) << CH432T_REG_SHIFT )]
-      hyy = reg_addr[0]
-      logger.info("reg = %d, portnum = %d, reg_addr = %#x, data = %#x" % (reg , self.portnum, hyy, data[0]))
+      logger.info("portnum = %d, reg = %d, reg_addr = %#x, data = %#x" % (self.portnum, reg , reg_addr[0], data[0]))
       data.insert(0, reg_addr[0])
-      # logger.info(data)
+
       GPIO.output(self._cs, GPIO.LOW)
-      # self._spi.xfer(reg_addr)
       self._spi.xfer(data)
       GPIO.output(self._cs, GPIO.HIGH)
       time.sleep(0.001)
@@ -1029,31 +985,24 @@ class DFRobot_CH432T(SerialBase, object):
       @param length read data length
       @return read data list
     '''
-    # logger.info("-------1-------")
     with ch432t_spi_lock:
       reg_addr = [0xFD & ( (reg + self.portnum * 0x08) << CH432T_REG_SHIFT )]
-      data = reg_addr[0]
-      # logger.info("reg_addr = %#x" % data)
-      GPIO.output(self._cs, GPIO.LOW)
-      # reg_addr.insert(-1, 0x00)
+      temp = reg_addr[0]
+      # for k in range(0, length):
       reg_addr.append(0xFF)
+
+      GPIO.output(self._cs, GPIO.LOW)
       self._spi.xfer(reg_addr)
-      # self._spi.xfer(rslt)
-      # rslt = self._spi.readbytes(length)
       GPIO.output(self._cs, GPIO.HIGH)
-      rslt = [reg_addr[1]]
-      # for i in range(0, 155):
-      #   # for j in range(0, 1000):
-      #   pass
-      # GPIO.output(self._cs, GPIO.HIGH)
-      # GPIO.output(self._cs, GPIO.HIGH)
-      # logger.info("reg = %d, portnum = %d, reg_addr = %#x, rslt = %#x" % (reg , self.portnum, data, rslt[0]))
-      # logger.info("++++++0++++++")
-      # print("")
-      # logger.info("*************")
-      # logger.info(rslt)
+
+      logger.info("portnum = %d, reg = %d, reg_addr = %#x, rslt = %#x" % (self.portnum, reg , temp, reg_addr[1]))
+      reg_addr.pop(0)
+      for i in range(1, 5):
+        for j in range(1, 30):
+          logger.info(i*j)
+          pass
       # time.sleep(0.0001)
-      return rslt
+      return reg_addr
 
   def cancel_read(self):
     '''!
