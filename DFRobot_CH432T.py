@@ -663,9 +663,9 @@ class DFRobot_CH432T(SerialBase, object):
 
     # Test user register of port0 and port1
     self._write_reg(CH432T_SCR_REG, 0x66)
-    spr = self._read_reg(CH432T_SCR_REG, 1)[0]
-    logger.info( "CH432T_SCR_REG = %#x", spr)
-    if 0x66 != spr:
+    scr = self._read_reg(CH432T_SCR_REG, 1)[0]
+    logger.info( "CH432T_SCR_REG = %#x", scr)
+    if 0x66 != scr:
       raise SerialException("Failed to open port! Check whether the expansion board \
                               is properly connected and whether spidev0.0 is occupied.")
 
@@ -718,14 +718,11 @@ class DFRobot_CH432T(SerialBase, object):
     else:
       raise ValueError('Invalid parity: {!r}'.format(self._parity))
 
-    # logger.info("cflag = %d", cflag)
+    logger.info("cflag = %d", cflag)
     if force_update or [cflag, self._baudrate] != self.orig_attr:
       self.orig_attr = [cflag, self._baudrate]
       # Now, initialize the UART
       self._write_reg(CH432T_LCR_REG, cflag)
-
-      # Set baud rate
-      self.set_baudrate(self._baudrate)
 
       # Reset FIFOs, Enable FIFOs and configure interrupt & flow control levels to 8
       val = CH432T_FCR_FIFO_BIT | CH432T_FCR_RXRESET_BIT | CH432T_FCR_TXRESET_BIT | CH432T_FCR_RECVTG_LEN_8
@@ -738,6 +735,9 @@ class DFRobot_CH432T(SerialBase, object):
 
       # Enable Uart interrupts, and automatic flow control (automatically control pin RTS)
       self._write_reg(CH432T_MCR_REG, CH432T_MCR_RTS_BIT | CH432T_MCR_OUT2 | CH432T_MCR_AFE)
+
+      # Set baud rate
+      self.set_baudrate(self._baudrate)
 
       # self.set_sleep_mode(CH432T_STANDARD_MODE)
 
@@ -997,9 +997,9 @@ class DFRobot_CH432T(SerialBase, object):
 
       logger.info("portnum = %d, reg = %d, reg_addr = %#x, rslt = %#x" % (self.portnum, reg , temp, reg_addr[1]))
       reg_addr.pop(0)
-      for i in range(1, 5):
-        for j in range(1, 30):
-          logger.info(i*j)
+      for i in range(0, 5):
+        for j in range(0, 30):
+          # logger.info(i*30+j)
           pass
       # time.sleep(0.0001)
       return reg_addr
