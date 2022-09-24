@@ -82,8 +82,12 @@ def main():
     #   # |       66       |        06      |       00 01      |      00 01       |    60 39   |
     #   # | Device address | operation code | register address | read data length | check code |
     # """
-    data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # The master reads the values of the slave register
-    print('Master reads data packets: %s\r\n' % (str(data)))
+    try:
+      data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # The master reads the values of the slave register
+    except Exception as r:
+      print(' %s' %(r))
+    else:
+      print('Master reads data packets: %s\r\n' % (str(data)))
 
     time.sleep(1)
 
