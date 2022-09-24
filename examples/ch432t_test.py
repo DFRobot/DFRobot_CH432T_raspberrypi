@@ -84,8 +84,8 @@ def main():
     # """
     try:
       data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # The master reads the values of the slave register
-    except Exception as r:
-      print(' %s' %(r))
+    except Exception as error:
+      print(' %s' %(error))
     else:
       print('Master reads data packets: %s\r\n' % (str(data)))
 

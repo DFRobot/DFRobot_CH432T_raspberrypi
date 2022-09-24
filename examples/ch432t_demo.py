@@ -57,7 +57,10 @@ def mod():
         # |    02   |   04   |   00 01   |   00 01   | 60 39 |
         # | Device address | operation code | register address | read data length | check code |
       """
-      data = master.execute(addr_sensor, cst.READ_INPUT_REGISTERS, 1, 1)
+      try:
+        data = master.execute(addr_sensor, cst.READ_INPUT_REGISTERS, 1, 1)
+      except Exception as error:
+        print(' %s' %(error))
       temperature = data[0]/10   # The read 16bit data divided by 10, then you get the measured temperature data of the sensor
       print("temperature = ", temperature)
       time.sleep(3)
@@ -70,10 +73,13 @@ def mod():
         # | Device address | operation code | register address | switching value data | check code |
         # When switching value data is 1 write: FF 00, when it is 0 write: 00 00
       """
-      if temperature > threshold:
-        master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 0 )   # 0 means the relay is disconnected, actually send data 00 00
-      else:
-        master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 1 )   # 1 means the relay is connected, actually send data FF 00
+      try:
+        if temperature > threshold:
+          master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 0 )   # 0 means the relay is disconnected, actually send data 00 00
+        else:
+          master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 1 )   # 1 means the relay is connected, actually send data FF 00
+      except Exception as error:
+        print(' %s' %(error))
 
       time.sleep(3)
 
