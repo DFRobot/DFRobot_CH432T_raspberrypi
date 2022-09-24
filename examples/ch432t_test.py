@@ -7,7 +7,7 @@
   @license  The MIT License (MIT)
   @author  [qsjhyy](yihuan.huang@dfrobot.com)
   @version  V1.0
-  @date  2021-10-28
+  @date  2022-09-24
   @url  https://github.com/DFRobot/DFRobot_CH432T
 '''
 from __future__ import print_function
@@ -16,7 +16,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import time
-import modbus_tk
+
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 
@@ -86,6 +86,8 @@ def main():
       data = master.execute(slave_addr, cst.READ_HOLDING_REGISTERS, 0, reg_length)   # The master reads the values of the slave register
     except Exception as error:
       print(' %s' %(error))
+      print("Press CTRL +\ to exit !")
+      # break
     else:
       print('Master reads data packets: %s\r\n' % (str(data)))
 

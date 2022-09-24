@@ -91,7 +91,8 @@ This CH432t Raspberry Pi SPI to modbus expansion board is designed to convert Pi
 ## History
 
 - 2021/12/30 - Version 1.0.0 released.
-- 2022/3/30 - Version 1.0.1 released.
+- 2022/03/30 - Version 1.0.1 released.
+- 2022/09/24 - Version 1.0.2 released.
 
 
 ## Credits

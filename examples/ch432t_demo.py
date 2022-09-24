@@ -8,7 +8,7 @@
   @license  The MIT License (MIT)
   @author  [qsjhyy](yihuan.huang@dfrobot.com)
   @version  V1.0
-  @date  2021-10-28
+  @date  2022-09-24
   @url  https://github.com/DFRobot/DFRobot_CH432T
 '''
 from __future__ import print_function
@@ -17,7 +17,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import time
-import modbus_tk
+
 import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 
@@ -39,28 +39,25 @@ relay_baudrate = 115200   # Baud rate of the relay
 PORT="CH432T_PORT_1"
 ser = DFRobot_CH432T(port=PORT, baudrate=115200, bytesize=8, parity='N', stopbits=1)
 
-def mod():
-  data = []
-  alarm = ""
-  try:
-    # ser.test_send(0x66)   # Send test
-    # Configure serial port
-    master = modbus_rtu.RtuMaster(ser)
-    master.set_timeout(5.0)
-    master.set_verbose(True)
-    print("ser.name = ", ser.name)
+def main():
+  print("This is a demo of how to use a Modbus sensor.")
+  print("If you want it to work, make sure you have connected your Modbus device and changed the relevant parameters in the demo to those of your device!\r\n")
 
-    while(1):
+  # Configure serial port
+  master = modbus_rtu.RtuMaster(ser)
+  master.set_timeout(5.0)
+  master.set_verbose(True)
+  print("ser.name = ", ser.name)
+
+  try:
+    while True:
       ser.baudrate = sensor_baudrate   # Change communication baud rate to the temperature sensor baud rate 9600
       """
         # Read the data of input register 0x01 of the temperature and humidity sensor whose rs485 address is 0x02
         # |    02   |   04   |   00 01   |   00 01   | 60 39 |
         # | Device address | operation code | register address | read data length | check code |
       """
-      try:
-        data = master.execute(addr_sensor, cst.READ_INPUT_REGISTERS, 1, 1)
-      except Exception as error:
-        print(' %s' %(error))
+      data = master.execute(addr_sensor, cst.READ_INPUT_REGISTERS, 1, 1)
       temperature = data[0]/10   # The read 16bit data divided by 10, then you get the measured temperature data of the sensor
       print("temperature = ", temperature)
       time.sleep(3)
@@ -73,26 +70,15 @@ def mod():
         # | Device address | operation code | register address | switching value data | check code |
         # When switching value data is 1 write: FF 00, when it is 0 write: 00 00
       """
-      try:
-        if temperature > threshold:
-          master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 0 )   # 0 means the relay is disconnected, actually send data 00 00
-        else:
-          master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 1 )   # 1 means the relay is connected, actually send data FF 00
-      except Exception as error:
-        print(' %s' %(error))
-
+      if temperature > threshold:
+        master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 0 )   # 0 means the relay is disconnected, actually send data 00 00
+      else:
+        master.execute(addr_relay, cst.WRITE_SINGLE_COIL, 0, output_value = 1 )   # 1 means the relay is connected, actually send data FF 00
       time.sleep(3)
 
-    alarm = "normal"
-    return list(data), alarm
-
-  except Exception as exc:
-    print(str(exc))
-    alarm = (str(exc))
-
-  return data, alarm   # Return [] if exception occurs, fault information
+  except Exception as err:
+    print(str(err))
 
 
 if __name__ == "__main__":
-  mod()
-
+  main()
