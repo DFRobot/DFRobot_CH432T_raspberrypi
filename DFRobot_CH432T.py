@@ -994,6 +994,8 @@ class DFRobot_CH432T(SerialBase, object):
       GPIO.output(self._cs, GPIO.LOW)
       self._spi.xfer(reg_addr)
       GPIO.output(self._cs, GPIO.HIGH)
+      if not isinstance(reg_addr[0], int):
+        reg_addr = list(map(int, reg_addr))
 
       logger.info("portnum = %d, reg = %d, reg_addr = %#x, rslt = %#x" % (self.portnum, reg , temp, reg_addr[1]))
       reg_addr.pop(0)
