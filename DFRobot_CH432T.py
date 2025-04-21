@@ -14,7 +14,6 @@ import sys
 import time
 
 import spidev
-import RPi.GPIO as GPIO
 
 import logging
 from ctypes import *
@@ -627,20 +626,11 @@ class DFRobot_CH432T(SerialBase, object):
     '''
     if port not in ["CH432T_PORT_1", "CH432T_PORT_2"]:
         raise SerialException("Invalid PORT, please select 'CH432T_PORT_1' or 'CH432T_PORT_2'")
-
     self.portnum = int(port[-1]) - 1
     logger.info("self.portnum = %d", self.portnum)
-
-    self._cs = 8   # default to use spidev0.0
-    GPIO.setwarnings(False)
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(self._cs, GPIO.OUT, initial=1)
-
     self._spi = spidev.SpiDev()
     self._spi.open(0, 0)   # default to use spidev0.0
-    self._spi.no_cs = True
     self._spi.max_speed_hz = 1000000   # SPI communication frequency is default to be 1 MHz
-
     super(DFRobot_CH432T, self).__init__(port, baudrate, bytesize, parity, stopbits)
 
   def close(self):
@@ -972,12 +962,8 @@ class DFRobot_CH432T(SerialBase, object):
       reg_addr = [0x02 | ( (reg + self.portnum * 0x08) << CH432T_REG_SHIFT )]
       logger.info("portnum = %d, reg = %d, reg_addr = %#x, data = %#x" % (self.portnum, reg , reg_addr[0], data[0]))
       data.insert(0, reg_addr[0])
-
-      GPIO.output(self._cs, GPIO.LOW)
       self._spi.xfer(data)
-      GPIO.output(self._cs, GPIO.HIGH)
       time.sleep(0.001)
-
   def _read_reg(self, reg, length):
     '''!
       @brief read the data from the register
@@ -990,20 +976,11 @@ class DFRobot_CH432T(SerialBase, object):
       temp = reg_addr[0]
       # for k in range(0, length):
       reg_addr.append(0xFF)
-
-      GPIO.output(self._cs, GPIO.LOW)
-      self._spi.xfer(reg_addr)
-      GPIO.output(self._cs, GPIO.HIGH)
+      self._spi.xfer2(reg_addr)
       if not isinstance(reg_addr[0], int):
         reg_addr = list(map(int, reg_addr))
-
-      logger.info("portnum = %d, reg = %d, reg_addr = %#x, rslt = %#x" % (self.portnum, reg , temp, reg_addr[1]))
       reg_addr.pop(0)
-      for i in range(0, 5):
-        for j in range(0, 30):
-          # logger.info(i*30+j)
-          pass
-      # time.sleep(0.0001)
+      time.sleep(0.0001)
       return reg_addr
 
   def cancel_read(self):
