@@ -962,7 +962,7 @@ class DFRobot_CH432T(SerialBase, object):
       reg_addr = [0x02 | ( (reg + self.portnum * 0x08) << CH432T_REG_SHIFT )]
       logger.info("portnum = %d, reg = %d, reg_addr = %#x, data = %#x" % (self.portnum, reg , reg_addr[0], data[0]))
       data.insert(0, reg_addr[0])
-      self._spi.xfer(data)
+      self._spi.xfer2(data)
       time.sleep(0.001)
   def _read_reg(self, reg, length):
     '''!
